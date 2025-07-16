@@ -25,6 +25,7 @@ urlpatterns = [
     # Swagger UI
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 
-    # Inclure scraping_data avec son namespace
+    # Inclure scraping_data avec namespace
     path('api/', include('scraping_data.urls', namespace='scraping_data')),
+    path('api-tester/', include('api_tester.urls')),
 ]

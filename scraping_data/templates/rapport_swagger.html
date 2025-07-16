@@ -34,6 +34,23 @@
 </head>
 <body class="bg-light">
 
+<!-- Navbar placée tout en haut -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container">
+    <a class="navbar-brand" href="#">Swagger Scraper</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'scraping_data:list-projects' %}">Projects</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
 <div class="container py-4">
   <h1 class="text-center mb-4 text-primary fw-bold">Rapport Swagger dynamique</h1>
 
@@ -59,45 +76,52 @@
 
   <div id="rapport-container" class="table-responsive">
     {% if swagger_data %}
-    <table class="table table-hover align-middle shadow-sm bg-white rounded" aria-describedby="rapport-description">
-      <caption id="rapport-description" class="visually-hidden">
-        Liste des endpoints Swagger extraits.
-      </caption>
-      <thead class="table-primary text-primary text-uppercase">
-        <tr>
-          <th scope="col">Méthode</th>
-          <th scope="col">Endpoint complet</th>
-          <th scope="col">Résumé</th>
-          <th scope="col">Paramètres</th>
-          <th scope="col">Commande cURL</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for ep in swagger_data %}
-        <tr>
-          <td><span class="method-badge method-{{ ep.method|lower }}">{{ ep.method }}</span></td>
-          <td><code>{{ ep.url_complete }}</code></td>
-          <td>{{ ep.summary|default:"(Pas de résumé)" }}</td>
-          <td>
-            {% if ep.parameters %}
-            <ul class="mb-0" style="max-height: 120px; overflow-y: auto; padding-left: 1rem;">
-              {% for p in ep.parameters %}
-              <li><strong>{{ p.name }}</strong> ({{ p.in }}, {{ p.type }}, requis: {{ p.required }})</li>
-              {% endfor %}
-            </ul>
-            {% else %}
-            <span class="text-muted fst-italic">Aucun</span>
-            {% endif %}
-          </td>
-          <td><pre>{{ ep.curl_command }}</pre></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      <table class="table table-hover align-middle shadow-sm bg-white rounded" aria-describedby="rapport-description">
+        <caption id="rapport-description" class="visually-hidden">
+          Liste des endpoints Swagger extraits.
+        </caption>
+        <thead class="table-primary text-primary text-uppercase">
+          <tr>
+            <th scope="col">Méthode</th>
+            <th scope="col">Endpoint complet</th>
+            <th scope="col">Résumé</th>
+            <th scope="col">Paramètres</th>
+            <th scope="col">Commande cURL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ep in swagger_data %}
+          <tr>
+            <td>
+              <span class="method-badge method-{{ ep.method|lower }}">
+                {{ ep.method }}
+              </span>
+            </td>
+            <td><code>{{ ep.url_complete }}</code></td>
+            <td>{{ ep.summary|default:"(Pas de résumé)" }}</td>
+            <td>
+              {% if ep.parameters %}
+              <ul class="mb-0" style="max-height: 120px; overflow-y: auto; padding-left: 1rem;">
+                {% for p in ep.parameters %}
+                <li>
+                  <strong>{{ p.name }}</strong>
+                  ({{ p.in }}, {{ p.type }}, requis: {{ p.required }})
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <span class="text-muted fst-italic">Aucun</span>
+              {% endif %}
+            </td>
+            <td><pre>{{ ep.curl_command }}</pre></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% else %}
-    <p class="text-center fs-5 text-muted mt-5">
-      Aucun rapport Swagger disponible. Lancez le scraping via le formulaire ci-dessus.
-    </p>
+      <p class="text-center fs-5 text-muted mt-5">
+        Aucun rapport Swagger disponible. Lancez le scraping via le formulaire ci-dessus.
+      </p>
     {% endif %}
   </div>
 
@@ -121,7 +145,7 @@
     e.preventDefault();
     if (!urlInput.checkValidity()) {
       urlInput.classList.add('is-invalid');
-      statusDiv.textContent = "⚠️ Veuillez entrer une URL Swagger valide.";
+      statusDiv.textContent = "⚠ Veuillez entrer une URL Swagger valide.";
       return;
     }
     urlInput.classList.remove('is-invalid');

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Outil de Test pour Projet #{{ project.pk }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">
+            Test d'API pour le Projet #{{ project.pk }}: {{ project.name|default:"Sans nom" }}
+        </h1>
+        <div class="bg-white p-6 rounded shadow">
+            <form id="apiForm" class="space-y-4">
+                <div>
+                    <label for="method" class="block text-sm font-medium">Méthode HTTP</label>
+                    <select id="method" class="mt-1 block w-full border rounded p-2">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="url" class="block text-sm font-medium">URL de l'endpoint</label>
+                    <input id="url" type="text" class="mt-1 block w-full border rounded p-2" placeholder="https://api.example.com/{id}/data">
+                </div>
+                <div>
+                    <label for="params" class="block text-sm font-medium">Paramètres de requête (JSON)</label>
+                    <textarea id="params" class="mt-1 block w-full border rounded p-2" placeholder='{"key": "value"}' rows="3"></textarea>
+                </div>
+                <div>
+                    <label for="path_vars" class="block text-sm font-medium">Variables de chemin (JSON)</label>
+                    <textarea id="path_vars" class="mt-1 block w-full border rounded p-2" placeholder='{"id": "123"}' rows="3"></textarea>
+                </div>
+                <div>
+                    <label for="body" class="block text-sm font-medium">Corps de la requête (JSON)</label>
+                    <textarea id="body" class="mt-1 block w-full border rounded p-2" placeholder='{"title": "foo", "body": "bar"}' rows="5"></textarea>
+                </div>
+                <div>
+                    <label for="headers" class="block text-sm font-medium">En-têtes HTTP (JSON)</label>
+                    <textarea id="headers" class="mt-1 block w-full border rounded p-2" placeholder='{"Content-Type": "application/json"}' rows="3"></textarea>
+                </div>
+                <div class="flex space-x-4">
+                    <button type="button" onclick="testEndpoint()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Test</button>
+                    <a href="{% url 'api_tester:download-history' project_pk=project.pk %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Check Details</a>
+                </div>
+            </form>
+            <div id="response" class="mt-4 p-4 border rounded max-w-full overflow-x-auto"></div>
+        </div>
+    </div>
+
+    {{ initial_data|json_script:"initial-data" }}
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const initialDataEl = document.getElementById('initial-data');
+            if (!initialDataEl) return;
+            const initialData = JSON.parse(initialDataEl.textContent);
+            if (initialData.method) document.getElementById('method').value = initialData.method.toUpperCase();
+            if (initialData.base_url && initialData.path) {
+                document.getElementById('url').value = initialData.base_url + initialData.path;
+            }
+            if (initialData.parameters) {
+                try {
+                    const parameters = JSON.parse(
+                        decodeURIComponent(initialData.parameters.replace(/\+/g, ' '))
+                    );
+                    const queryParams = {}, pathVars = {}, bodyParams = {};
+                    parameters.forEach(param => {
+                        const value = param.value !== undefined ? param.value : '';
+                        if (param.in === 'query') queryParams[param.name] = value;
+                        else if (param.in === 'path') pathVars[param.name] = value;
+                        else if (param.in === 'body') bodyParams[param.name] = value;
+                    });
+                    if (Object.keys(queryParams).length > 0)
+                        document.getElementById('params').value = JSON.stringify(queryParams, null, 2);
+                    if (Object.keys(pathVars).length > 0)
+                        document.getElementById('path_vars').value = JSON.stringify(pathVars, null, 2);
+                    if (Object.keys(bodyParams).length > 0)
+                        document.getElementById('body').value = JSON.stringify(bodyParams, null, 2);
+                } catch (e) {
+                    console.error("Erreur de parsing des paramètres initiaux :", e);
+                }
+            }
+        });
+
+        async function testEndpoint() {
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = `<p>Test en cours...</p>`;
+
+            let params, path_vars, body, headers;
+            try {
+                params = JSON.parse(document.getElementById('params').value || '{}');
+                path_vars = JSON.parse(document.getElementById('path_vars').value || '{}');
+                body = JSON.parse(document.getElementById('body').value || '{}');
+                headers = JSON.parse(document.getElementById('headers').value || '{}');
+            } catch (e) {
+                responseDiv.innerHTML = `<p class="text-red-500"><strong>Erreur:</strong> Le format JSON dans l'un des champs est invalide.</p>`;
+                return;
+            }
+
+            const method = document.getElementById('method').value;
+            const url = document.getElementById('url').value;
+
+            try {
+                const response = await fetch("{% url 'api_tester:test-endpoint' project_pk=project.pk %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({ method, url, params, path_vars, body, headers }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                let responseContent = '';
+                try {
+                    const formattedJson = JSON.stringify(JSON.parse(result.response), null, 2);
+                    responseContent = `<pre class="bg-gray-100 p-2 rounded mt-2 text-sm">${formattedJson}</pre>`;
+                } catch (e) {
+                    responseContent = `<pre class="bg-gray-100 p-2 rounded mt-2 text-sm">${result.response}</pre>`;
+                }
+
+                responseDiv.innerHTML = `
+                    <p><strong>Statut de la réponse :</strong> <span class="font-bold">${result.status_code}</span></p>
+                    ${responseContent}
+                `;
+            } catch (error) {
+                console.error("Erreur lors de l'appel fetch:", error);
+                responseDiv.innerHTML = `<p class="text-red-500"><strong>Erreur de communication :</strong> ${error.message}. Vérifiez la console (F12).</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

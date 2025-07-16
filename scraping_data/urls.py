@@ -7,7 +7,10 @@ from .views import (
     afficher_rapport_swagger,
     rapport_swagger_pdf,
     lancer_scraping,
-    list_projects
+    list_projects,
+    add_project,       # ajouté
+    edit_project,      # ajouté
+    delete_project,    # ajouté
 )
 
 app_name = 'scraping_data'
@@ -22,5 +25,11 @@ urlpatterns = [
 
     path('swagger/endpoints/', SwaggerScrapeAPIView.as_view(), name='swagger-endpoints'),
     path('lancer-scraping/', lancer_scraping, name='lancer-scraping'),
+
     path('list-projects/', list_projects, name='list-projects'),
+
+    # Ajouts pour CRUD projets Swagger
+    path('projects/add/', add_project, name='add-project'),
+    path('projects/<int:pk>/edit/', edit_project, name='edit-project'),
+    path('projects/<int:pk>/delete/', delete_project, name='delete-project'),
 ]

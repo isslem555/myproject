@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'scraping_data',
     'drf_yasg',
+    'api_tester',
 ]
 
 MIDDLEWARE = [
